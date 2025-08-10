@@ -48,6 +48,10 @@ well basically, it's features are still underdevelopment and testing, i'm trying
 
 **contributing**
 
-how can I contribute to this, well basically as you can see above I removed issues, because issues don't contribute to the development of a project, if you think that's a crazy thing to say, argue it on my email: devastro0010@gmail.com.
-so how do I contribute and make myself not look like a skid?
-read the [contributing guidelines](https://github.com/AstroX11/user-bot?tab=contributing-ov-file).
+anyone can help make this project better. you can fix bugs, add new features, improve the code, or even just update the docs. before you start, please read the [contributing guidelines](https://github.com/AstroX11/user-bot?tab=contributing-ov-file) to understand how I work on this project.  
+
+some ways you can contribute:  
+- report bugs or suggest features by opening an issue.
+- send a pull request with code changes.
+- help test new updates and give feedback.
+- improve readme files or other documentation.
