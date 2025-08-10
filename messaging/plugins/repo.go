@@ -5,6 +5,7 @@ import (
 	"bot/messaging"
 	btypes "bot/types"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -13,7 +14,7 @@ func init() {
 		Name:     "repo",
 		FromMe:   false,
 		Category: "misc",
-		Handler: func(msg *events.Message, _ []string) {
+		Handler: func(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 			_, _ = client.SendMessage(client.SendOptions{
 				JID:      msg.Info.Chat,
 				Type:     client.MsgImage,

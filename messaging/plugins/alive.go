@@ -9,6 +9,7 @@ import (
 	"bot/messaging"
 	btypes "bot/types"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -24,7 +25,7 @@ func init() {
 	})
 }
 
-func Alive(msg *events.Message, _ []string) {
+func Alive(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 	uptime := time.Since(startTime).Truncate(time.Second)
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)

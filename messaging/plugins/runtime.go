@@ -9,6 +9,7 @@ import (
 	"bot/messaging/helpers"
 	btypes "bot/types"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -22,7 +23,7 @@ func init() {
 	})
 }
 
-func Runtime(msg *events.Message, _ []string) {
+func Runtime(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 	uptime := helpers.FormatRuntime(time.Since(helpers.StartedAt))
 	response := fmt.Sprintf("```\nRuntime: %s\n```", uptime)
 

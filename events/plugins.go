@@ -10,12 +10,13 @@ import (
 	"bot/sql"
 	"bot/utils"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
 var commandRegex = regexp.MustCompile(`(?i)^\. *([a-z0-9_]+)`)
 
-func Plugins(msg *events.Message) {
+func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 	if msg.Message == nil {
 		return
 	}
@@ -44,7 +45,7 @@ func Plugins(msg *events.Message) {
 
 	cmd := messaging.FindCommand(cmdName)
 	if cmd != nil {
-		cmd.Handler(msg, args)
+		cmd.Handler(msg, args, sock)
 		return
 	}
 

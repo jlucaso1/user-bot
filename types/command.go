@@ -1,11 +1,14 @@
 package types
 
-import "go.mau.fi/whatsmeow/types/events"
+import (
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/types/events"
+)
 
 type Command struct {
 	Name     string
 	Category string
 	FromMe   bool
 	IsGroup  bool
-	Handler  func(msg *events.Message, args []string)
+	Handler  func(msg *events.Message, args []string, client *whatsmeow.Client)
 }

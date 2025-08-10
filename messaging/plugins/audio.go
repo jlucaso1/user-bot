@@ -7,6 +7,7 @@ import (
 	"bot/messaging"
 	btypes "bot/types"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -20,7 +21,7 @@ func init() {
 	})
 }
 
-func SendTestAudio(msg *events.Message, args []string) {
+func SendTestAudio(msg *events.Message, args []string, sock *whatsmeow.Client) {
 	audioPath := "./resources/audio.mp3"
 
 	isVoice := false

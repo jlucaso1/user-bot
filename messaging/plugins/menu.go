@@ -14,6 +14,7 @@ import (
 	"bot/types"
 	"bot/utils"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -27,7 +28,7 @@ func init() {
 	})
 }
 
-func Help(msg *events.Message, _ []string) {
+func Help(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 	prefix, err := sql.GetPrefix()
 	if err != nil || prefix == "" {
 		prefix = "."

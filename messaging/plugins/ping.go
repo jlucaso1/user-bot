@@ -8,8 +8,10 @@ import (
 	"bot/messaging"
 	btypes "bot/types"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -22,13 +24,11 @@ func init() {
 	})
 }
 
-func Ping(msg *events.Message, _ []string) {
+func Ping(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 	start := time.Now()
 
-	id, _ := client.SendMessage(client.SendOptions{
-		JID:  msg.Info.Chat,
-		Type: client.MsgText,
-		Text: "🏓 Pong!",
+	res, _ := sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
+		Conversation: proto.String("🏓 Pong!"),
 	})
 
 	duration := time.Since(start)
@@ -37,7 +37,7 @@ func Ping(msg *events.Message, _ []string) {
 	_, _ = client.SendMessage(client.SendOptions{
 		JID:        msg.Info.Chat,
 		Type:       client.MsgEdit,
-		MessageID:  id,
+		MessageID:  res.ID,
 		NewMessage: &waE2E.Message{Conversation: &response},
 	})
 }

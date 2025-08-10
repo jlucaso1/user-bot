@@ -32,7 +32,9 @@ func main() {
 
 	device, _ := store.GetFirstDevice(ctx)
 	sock = whatsmeow.NewClient(device, waLog.Stdout("Client", "INFO", true))
-	sock.AddEventHandler(ev.EventHandler)
+	sock.AddEventHandler(func(evt interface{}) {
+		ev.EventHandler(sock, evt)
+	})
 
 	err := sock.Connect()
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"bot/messaging"
 	btypes "bot/types"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -18,7 +19,7 @@ func init() {
 	})
 }
 
-func Sticker(msg *events.Message, args []string) {
+func Sticker(msg *events.Message, args []string, sock *whatsmeow.Client) {
 	if len(args) == 0 {
 		_, _ = client.SendMessage(client.SendOptions{
 			JID:  msg.Info.Chat,
