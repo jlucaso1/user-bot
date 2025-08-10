@@ -11,14 +11,14 @@ import (
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
 
+	"bot/client"
 	"bot/config"
 	ev "bot/events"
 	_ "bot/messaging/plugins"
 	sql "bot/sql"
-	"bot/utils"
 )
 
-var client *whatsmeow.Client
+var sock *whatsmeow.Client
 
 func main() {
 	ctx := context.Background()
@@ -31,21 +31,21 @@ func main() {
 	}
 
 	device, _ := store.GetFirstDevice(ctx)
-	client = whatsmeow.NewClient(device, waLog.Stdout("Client", "INFO", true))
-	client.AddEventHandler(ev.EventHandler)
+	sock = whatsmeow.NewClient(device, waLog.Stdout("Client", "INFO", true))
+	sock.AddEventHandler(ev.EventHandler)
 
-	err := client.Connect()
+	err := sock.Connect()
 	if err != nil {
 		log.Fatal("Connection failed:", err)
 	}
 
-	utils.PairClient(ctx, client, config.AppConfig)
-	utils.SetClient(client)
-	utils.PortServe()
+	client.RequestPairCode(ctx, sock, config.AppConfig)
+	client.SetClient(sock)
+	client.PortServe()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	client.Disconnect()
+	sock.Disconnect()
 }

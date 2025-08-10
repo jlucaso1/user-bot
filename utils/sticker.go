@@ -1,97 +1,107 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 )
 
-func ImageToWebp(path, out string) error {
-	args := []string{
-		"-i", path,
-		"-vcodec", "libwebp",
-		"-vf", "scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15,pad=320:320:-1:-1:color=white@0.0",
-		"-lossless", "1",
-		"-preset", "default",
-		"-an",
-		"-y", out,
+func ToWebp(inputPath, outputPath string) (string, bool, error) {
+	ext := strings.ToLower(strings.TrimPrefix(getFileExt(inputPath), "."))
+	tmpDir := "./webp_tmp"
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return "", false, err
 	}
-	return runFFmpeg(args)
+
+	localWebp := fmt.Sprintf("%s/%s.webp", tmpDir, getBaseName(inputPath))
+	var cmd *exec.Cmd
+
+	if isVideo(ext) {
+		cmd = exec.Command("ffmpeg", "-y", "-i", inputPath,
+			"-t", "8",
+			"-vf", "scale=512:512:force_original_aspect_ratio=decrease,fps=15",
+			"-c:v", "libwebp",
+			"-lossless", "0",
+			"-q:v", "50",
+			"-loop", "0",
+			"-an",
+			"-preset", "picture",
+			localWebp)
+	} else {
+		cmd = exec.Command("cwebp", "-q", "80", inputPath, "-o", localWebp)
+	}
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return "", false, fmt.Errorf("conversion failed: %v, %s", err, string(out))
+	}
+
+	if fi, _ := os.Stat(localWebp); fi != nil && fi.Size() > 800*1024 {
+		if isVideo(ext) {
+			cmd = exec.Command("ffmpeg", "-y", "-i", localWebp,
+				"-c:v", "libwebp", "-lossless", "0", "-q:v", "60", "-preset", "picture", localWebp)
+		} else {
+			cmd = exec.Command("cwebp", "-q", "60", inputPath, "-o", localWebp)
+		}
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return "", false, fmt.Errorf("recompression failed: %v, %s", err, string(out))
+		}
+	}
+
+	if err := copyFile(localWebp, outputPath); err != nil {
+		return "", false, err
+	}
+
+	return outputPath, IsWebpAnimated(outputPath), nil
 }
 
-func VideoToWebp(path, out string, durationSec int) error {
-	args := []string{
-		"-i", path,
-		"-vcodec", "libwebp",
-		"-vf", "scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15,pad=320:320:-1:-1:color=white@0.0",
-		"-loop", "0",
-		"-ss", "00:00:00",
-		fmt.Sprintf("-t=%02d", durationSec),
-		"-preset", "default",
-		"-an",
-		"-y", out,
+func isVideo(ext string) bool {
+	for _, v := range []string{"mp4", "mov", "mkv", "avi", "webm", "flv", "gif"} {
+		if ext == v {
+			return true
+		}
 	}
-	return runFFmpeg(args)
+	return false
 }
 
-func runFFmpeg(args []string) error {
-	cmd := exec.Command("ffmpeg", args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+func getFileExt(p string) string {
+	if i := strings.LastIndex(p, "."); i != -1 {
+		return p[i:]
+	}
+	return ""
+}
+
+func getBaseName(p string) string {
+	p = strings.ReplaceAll(p, "\\", "/")
+	if i := strings.LastIndex(p, "/"); i != -1 {
+		p = p[i+1:]
+	}
+	if i := strings.LastIndex(p, "."); i != -1 {
+		p = p[:i]
+	}
+	return p
+}
+
+func copyFile(src, dst string) error {
+	s, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("ffmpeg error: %v: %s", err, stderr.String())
-	}
-	return nil
-}
-
-func InjectEXIFMeta(inputPath, outputPath, packName, author string) error {
-	json := fmt.Sprintf(`{"sticker-pack-id":"com.astrox11.user-bot","sticker-pack-name":"%s","sticker-pack-publisher":"%s","emojis":["⚡"]}`, packName, author)
-
-	jsonBytes := []byte(json)
-	exifPayload := append([]byte("II*\x00\x08\x00\x00\x00"), jsonBytes...)
-
-	var buf bytes.Buffer
-	buf.WriteString("EXIF")
-	if err := binary.Write(&buf, binary.BigEndian, uint32(len(exifPayload))); err != nil {
 		return err
 	}
-	buf.Write(exifPayload)
-
-	exifChunk := buf.Bytes()
-
-	inputData, err := os.ReadFile(inputPath)
+	defer s.Close()
+	d, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
+	defer d.Close()
+	_, err = io.Copy(d, s)
+	return err
+}
 
-	var output []byte
-	inserted := false
-
-	for i := 0; i < len(inputData); {
-		if i+8 > len(inputData) {
-			break
-		}
-
-		chunkType := string(inputData[i : i+4])
-		chunkSize := binary.BigEndian.Uint32(inputData[i+4 : i+8])
-		chunkEnd := i + 8 + int(chunkSize)
-
-		output = append(output, inputData[i:chunkEnd]...)
-
-		if chunkType == "VP8X" && !inserted {
-			output = append(output, exifChunk...)
-			inserted = true
-		}
-
-		i = chunkEnd
+func IsWebpAnimated(path string) bool {
+	out, err := exec.Command("webpmux", "-info", path).CombinedOutput()
+	if err != nil {
+		return false
 	}
-
-	if !inserted {
-		return fmt.Errorf("VP8X chunk not found in file")
-	}
-
-	return os.WriteFile(outputPath, output, 0644)
+	s := string(out)
+	return strings.Contains(s, "Number of frames") && !strings.Contains(s, "Number of frames: 1")
 }

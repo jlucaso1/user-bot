@@ -5,9 +5,9 @@ import (
 	"runtime"
 	"time"
 
+	"bot/client"
 	"bot/messaging"
-	"bot/types"
-	"bot/utils"
+	btypes "bot/types"
 
 	"go.mau.fi/whatsmeow/types/events"
 )
@@ -15,7 +15,7 @@ import (
 var startTime = time.Now()
 
 func init() {
-	messaging.RegisterCommand(&types.Command{
+	messaging.RegisterCommand(&btypes.Command{
 		Name:     "alive",
 		Category: "System",
 		FromMe:   false,
@@ -46,5 +46,9 @@ func Alive(msg *events.Message, _ []string) {
 		runtime.GOARCH,
 	)
 
-	_, _ = utils.SendMessage(msg.Info.Chat, response)
+	_, _ = client.SendMessage(client.SendOptions{
+		JID:  msg.Info.Chat,
+		Type: client.MsgText,
+		Text: response,
+	})
 }

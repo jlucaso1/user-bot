@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"time"
 
+	"bot/client"
 	"bot/messaging"
 	"bot/messaging/helpers"
-	"bot/types"
-	"bot/utils"
+	btypes "bot/types"
 
 	"go.mau.fi/whatsmeow/types/events"
 )
 
 func init() {
-	messaging.RegisterCommand(&types.Command{
+	messaging.RegisterCommand(&btypes.Command{
 		Name:     "runtime",
 		Category: "System",
 		FromMe:   false,
@@ -25,5 +25,10 @@ func init() {
 func Runtime(msg *events.Message, _ []string) {
 	uptime := helpers.FormatRuntime(time.Since(helpers.StartedAt))
 	response := fmt.Sprintf("```\nRuntime: %s\n```", uptime)
-	_, _ = utils.SendMessage(msg.Info.Chat, response)
+
+	_, _ = client.SendMessage(client.SendOptions{
+		JID:  msg.Info.Chat,
+		Type: client.MsgText,
+		Text: response,
+	})
 }

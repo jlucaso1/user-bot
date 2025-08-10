@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"bot/client"
 	"bot/messaging"
 	"bot/sql"
 	"bot/utils"
@@ -19,7 +20,7 @@ func Plugins(msg *events.Message) {
 		return
 	}
 
-	messageText := utils.ExtractText(msg.Message)
+	messageText := utils.ExtractTextFromMessage(msg.Message)
 	if messageText == "" {
 		return
 	}
@@ -49,8 +50,14 @@ func Plugins(msg *events.Message) {
 
 	suggestion := messaging.SuggestCommand(cmdName)
 	if suggestion != "" {
-		utils.SendMessage(msg.Info.Chat, fmt.Sprintf("❌ Command `%s` not found. Did you mean `%s%s`?", cmdName, prefix, suggestion))
+		client.SendMessage(client.SendOptions{
+			JID:  msg.Info.Chat,
+			Text: fmt.Sprintf("❌ Command `%s` not found. Did you mean `%s%s`?", cmdName, prefix, suggestion),
+		})
 	} else {
-		utils.SendMessage(msg.Info.Chat, fmt.Sprintf("❌ Command `%s` not found.", cmdName))
+		client.SendMessage(client.SendOptions{
+			JID:  msg.Info.Chat,
+			Text: fmt.Sprintf("❌ Command `%s` not found.", cmdName),
+		})
 	}
 }

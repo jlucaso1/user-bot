@@ -1,4 +1,4 @@
-package utils
+package client
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	app "bot/types"
 )
 
-func PairClient(ctx context.Context, client *whatsmeow.Client, config app.Config) {
+func RequestPairCode(ctx context.Context, client *whatsmeow.Client, config app.Config) {
 	if client.Store.ID == nil {
 		time.Sleep(2 * time.Second)
 

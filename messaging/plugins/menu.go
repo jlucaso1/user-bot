@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"bot/client"
 	"bot/config"
 	"bot/messaging"
 	"bot/messaging/helpers"
@@ -96,5 +97,8 @@ func Help(msg *events.Message, _ []string) {
 		cmdBlock += "╰───────```\n"
 	}
 
-	utils.SendMessage(msg.Info.Chat, infoBlock+cmdBlock)
+	client.SendMessage(client.SendOptions{
+		JID:  msg.Info.Chat,
+		Text: infoBlock + cmdBlock,
+	})
 }

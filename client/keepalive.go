@@ -1,7 +1,8 @@
-package utils
+package client
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -57,6 +58,21 @@ func PortServe() {
 			fmt.Fprintf(w, "%s = %s\n", pair[0], pair[1])
 		}
 	})
+
+	// self-ping goroutine
+	go func() {
+		for {
+			time.Sleep(45 * time.Second)
+			resp, err := http.Get("http://localhost:8000")
+			if err != nil {
+				fmt.Printf("\033[31m[Self-Ping ERROR] %v\033[0m\n", err)
+				continue
+			}
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+			fmt.Printf("\033[32m[Self-Ping] %s\033[0m\n", time.Now().Format("15:04:05"))
+		}
+	}()
 
 	now := time.Now().Format("15:04:05.000")
 	fmt.Printf("\033[34m%s [Server INFO] SERVER HOST: 8000\033[0m\n", now)

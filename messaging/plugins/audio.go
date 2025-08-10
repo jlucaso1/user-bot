@@ -3,15 +3,15 @@ package plugins
 import (
 	"strings"
 
+	"bot/client"
 	"bot/messaging"
-	"bot/types"
-	"bot/utils"
+	btypes "bot/types"
 
 	"go.mau.fi/whatsmeow/types/events"
 )
 
 func init() {
-	messaging.RegisterCommand(&types.Command{
+	messaging.RegisterCommand(&btypes.Command{
 		Name:     "audio",
 		Category: "Test",
 		FromMe:   true,
@@ -28,6 +28,10 @@ func SendTestAudio(msg *events.Message, args []string) {
 		isVoice = true
 	}
 
-	utils.SendAudio(msg.Info.Chat, audioPath, isVoice)
-
+	_, _ = client.SendMessage(client.SendOptions{
+		JID:         msg.Info.Chat,
+		Type:        client.MsgAudio,
+		FilePath:    audioPath,
+		IsVoiceNote: isVoice,
+	})
 }
