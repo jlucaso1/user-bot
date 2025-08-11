@@ -1,6 +1,6 @@
 ### `xstro golang`
 
-user bot is a free open source tool that works with whatsapp. it is made with golang and uses the [whatsmeow](https://github.com/tulir/whatsmeow) client to connect to whatsapp and do things like send messages, reply to chats, and run tasks for you.
+an open source tool that works with whatsapp. it is made with golang and uses the [whatsmeow](https://github.com/tulir/whatsmeow) client to connect to whatsapp and do things like send messages, reply to chats, and run tasks for you.
 
 ### what you need to understand
 
