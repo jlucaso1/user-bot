@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"bot/client"
 	"bot/config"
 	"bot/messaging"
 	"bot/messaging/helpers"
@@ -15,7 +14,9 @@ import (
 	"bot/utils"
 
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -98,8 +99,7 @@ func Help(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 		cmdBlock += "╰───────```\n"
 	}
 
-	client.SendMessage(types.SendOptions{
-		JID:  msg.Info.Chat,
-		Text: infoBlock + cmdBlock,
+	sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
+		Conversation: proto.String(infoBlock + cmdBlock),
 	})
 }
