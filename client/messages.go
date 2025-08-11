@@ -14,7 +14,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-
 var sock *whatsmeow.Client
 
 func SetClient(c *whatsmeow.Client) { sock = c }
@@ -216,4 +215,23 @@ func sendMedia(opts types.SendOptions, mediaType whatsmeow.MediaType, build func
 	os.Remove(opts.FilePath)
 
 	return resp.ID, nil
+}
+
+func ExtractContextInfo(msg *waE2E.Message) *waE2E.ContextInfo {
+	if msg.ExtendedTextMessage != nil {
+		return msg.ExtendedTextMessage.GetContextInfo()
+	}
+	if msg.ImageMessage != nil {
+		return msg.ImageMessage.GetContextInfo()
+	}
+	if msg.VideoMessage != nil {
+		return msg.VideoMessage.GetContextInfo()
+	}
+	if msg.AudioMessage != nil {
+		return msg.AudioMessage.GetContextInfo()
+	}
+	if msg.DocumentMessage != nil {
+		return msg.DocumentMessage.GetContextInfo()
+	}
+	return nil
 }

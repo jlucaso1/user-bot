@@ -13,7 +13,7 @@ func init() {
 	messaging.RegisterCommand(&btypes.Command{
 		Name:     "repo",
 		FromMe:   false,
-		Category: "misc",
+		Category: "Utils",
 		Handler: func(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 			_, _ = client.SendMessage(btypes.SendOptions{
 				JID:      msg.Info.Chat,

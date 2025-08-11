@@ -1,10 +1,16 @@
 package utils
 
 import (
+	"os"
 	"strings"
+	"syscall"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
 )
+
+func Restart() error {
+	return syscall.Exec(os.Args[0], os.Args, os.Environ())
+}
 
 var fancyMap = map[rune]rune{
 	'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'ᴇ',
