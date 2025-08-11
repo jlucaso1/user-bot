@@ -7,10 +7,10 @@ import (
 
 	"go.mau.fi/whatsmeow"
 
-	app "bot/types"
+	"bot/types"
 )
 
-func RequestPairCode(ctx context.Context, client *whatsmeow.Client, config app.Config) {
+func RequestPairCode(ctx context.Context, client *whatsmeow.Client, config types.Config) {
 	if client.Store.ID == nil {
 		time.Sleep(2 * time.Second)
 

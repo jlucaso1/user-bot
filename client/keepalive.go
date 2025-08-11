@@ -70,12 +70,12 @@ func PortServe() {
 			}
 			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
-			fmt.Printf("\033[32m[Self-Ping] %s\033[0m\n", time.Now().Format("15:04:05"))
+			fmt.Printf("%s\033[0m\n \033[32m[Self-Ping]", time.Now().Format("15:04:05"))
 		}
 	}()
 
 	now := time.Now().Format("15:04:05.000")
-	fmt.Printf("\033[34m%s [Server INFO] SERVER HOST: 8000\033[0m\n", now)
+	fmt.Printf("\033[34m%s [Client INFO] started on port: 8000\033[0m\n", now)
 
 	if err := http.ListenAndServe(":8000", nil); err != nil {
 		panic(err)

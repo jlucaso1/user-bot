@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"go.mau.fi/whatsmeow"
+	es "go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
 
@@ -29,6 +30,7 @@ func main() {
 	if err := store.Upgrade(ctx); err != nil {
 		log.Fatal("Store upgrade failed:", err)
 	}
+	es.SetOSInfo("Xstro", [3]uint32{10, 15, 7})
 
 	device, _ := store.GetFirstDevice(ctx)
 	sock = whatsmeow.NewClient(device, waLog.Stdout("Client", "INFO", true))

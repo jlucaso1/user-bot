@@ -135,6 +135,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 *.db
-whatsmeow.db-shm
-whatsmeow.db-wal
+*.db-shm
+*.db-wal
 *.exe
