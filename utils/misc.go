@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"syscall"
@@ -138,4 +140,13 @@ func Ucfirst(s string) string {
 		runes[0] = runes[0] - ('a' - 'A')
 	}
 	return string(runes)
+}
+
+func LogPretty(v interface{}) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Println(string(b))
 }

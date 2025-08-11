@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -12,6 +11,43 @@ import (
 )
 
 var startTime = time.Now()
+
+func getLocalIP() string {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "error fetching interfaces"
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue
+			}
+			return ip.String()
+		}
+	}
+	return "no ip found"
+}
 
 func PortServe() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -59,18 +95,12 @@ func PortServe() {
 		}
 	})
 
-	// self-ping goroutine
 	go func() {
 		for {
 			time.Sleep(45 * time.Second)
-			resp, err := http.Get("http://localhost:8000")
-			if err != nil {
-				fmt.Printf("\033[31m[Self-Ping ERROR] %v\033[0m\n", err)
-				continue
-			}
-			io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
-			fmt.Printf("%s\033[0m\n \033[32m[Self-Ping]", time.Now().Format("15:04:05"))
+			ip := getLocalIP()
+			now := time.Now().Format("15:04:05.000")
+			fmt.Printf("\033[36m%s [Local IP] %s\033[0m\n", now, ip)
 		}
 	}()
 

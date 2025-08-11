@@ -1,0 +1,5 @@
+package hooks
+
+func GroupParticipants() {
+
+}
