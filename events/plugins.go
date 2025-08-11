@@ -8,6 +8,7 @@ import (
 	"bot/client"
 	"bot/messaging"
 	"bot/sql"
+	"bot/types"
 	"bot/utils"
 
 	"go.mau.fi/whatsmeow"
@@ -51,12 +52,12 @@ func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 
 	suggestion := messaging.SuggestCommand(cmdName)
 	if suggestion != "" {
-		client.SendMessage(client.SendOptions{
+		client.SendMessage(types.SendOptions{
 			JID:  msg.Info.Chat,
 			Text: fmt.Sprintf("❌ Command `%s` not found. Did you mean `%s%s`?", cmdName, prefix, suggestion),
 		})
 	} else {
-		client.SendMessage(client.SendOptions{
+		client.SendMessage(types.SendOptions{
 			JID:  msg.Info.Chat,
 			Text: fmt.Sprintf("❌ Command `%s` not found.", cmdName),
 		})

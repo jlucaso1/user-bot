@@ -15,9 +15,9 @@ func init() {
 		FromMe:   false,
 		Category: "misc",
 		Handler: func(msg *events.Message, _ []string, sock *whatsmeow.Client) {
-			_, _ = client.SendMessage(client.SendOptions{
+			_, _ = client.SendMessage(btypes.SendOptions{
 				JID:      msg.Info.Chat,
-				Type:     client.MsgImage,
+				Type:     btypes.MsgImage,
 				FilePath: "./resources/logo.png",
 				Caption:  "Simple User WhatsAppBot\nhttps://github.com/AstroX11/user-bot",
 			})

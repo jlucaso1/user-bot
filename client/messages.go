@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bot/types"
 	"bot/utils"
 	"context"
 	"fmt"
@@ -10,48 +11,21 @@ import (
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
-	"go.mau.fi/whatsmeow/types"
 	"google.golang.org/protobuf/proto"
 )
 
-type MessageType string
-
-const (
-	MsgText    MessageType = "text"
-	MsgImage   MessageType = "image"
-	MsgVideo   MessageType = "video"
-	MsgDoc     MessageType = "document"
-	MsgAudio   MessageType = "audio"
-	MsgSticker MessageType = "sticker"
-	MsgEdit    MessageType = "edit"
-)
-
-type SendOptions struct {
-	JID         types.JID
-	Type        MessageType
-	Text        string
-	FilePath    string
-	FileName    string
-	Caption     string
-	IsVoiceNote bool
-	MessageID   string
-	NewMessage  *waE2E.Message
-	Author      string
-	PackName    string
-	Categories  []string
-}
 
 var sock *whatsmeow.Client
 
 func SetClient(c *whatsmeow.Client) { sock = c }
 
-func SendMessage(opts SendOptions) (string, error) {
+func SendMessage(opts types.SendOptions) (string, error) {
 	if sock == nil {
 		return "", fmt.Errorf("client not initialized")
 	}
 
 	switch opts.Type {
-	case MsgText:
+	case types.MsgText:
 		msg := &waE2E.Message{Conversation: proto.String(opts.Text)}
 		resp, err := sock.SendMessage(context.Background(), opts.JID, msg)
 		if err != nil {
@@ -59,7 +33,7 @@ func SendMessage(opts SendOptions) (string, error) {
 		}
 		return resp.ID, nil
 
-	case MsgImage:
+	case types.MsgImage:
 		return sendMedia(opts, whatsmeow.MediaImage, func(urls uploadedMedia, size int64) *waE2E.Message {
 			mimeType := mime.TypeByExtension(filepath.Ext(opts.FilePath))
 			if mimeType == "" {
@@ -79,7 +53,7 @@ func SendMessage(opts SendOptions) (string, error) {
 			}
 		})
 
-	case MsgVideo:
+	case types.MsgVideo:
 		return sendMedia(opts, whatsmeow.MediaVideo, func(urls uploadedMedia, size int64) *waE2E.Message {
 			mimeType := mime.TypeByExtension(filepath.Ext(opts.FilePath))
 			if mimeType == "" {
@@ -99,7 +73,7 @@ func SendMessage(opts SendOptions) (string, error) {
 			}
 		})
 
-	case MsgDoc:
+	case types.MsgDoc:
 		return sendMedia(opts, whatsmeow.MediaDocument, func(urls uploadedMedia, size int64) *waE2E.Message {
 			fileName := opts.FileName
 			if fileName == "" {
@@ -123,7 +97,7 @@ func SendMessage(opts SendOptions) (string, error) {
 			}
 		})
 
-	case MsgAudio:
+	case types.MsgAudio:
 		convertedPath, err := func() (string, error) {
 			if opts.IsVoiceNote {
 				return utils.ConvertToOpus(opts.FilePath)
@@ -163,11 +137,11 @@ func SendMessage(opts SendOptions) (string, error) {
 			}
 		})
 
-	case MsgSticker:
+	case types.MsgSticker:
 		tmpWebp := filepath.Join(os.TempDir(), "converted_sticker.webp")
 		defer os.Remove(tmpWebp)
 
-		finalPath, err := utils.ToWebp(opts.FilePath, tmpWebp, &utils.WebpMetadata{
+		finalPath, err := utils.ToWebp(opts.FilePath, tmpWebp, &types.WebpMetadata{
 			Author:     opts.Author,
 			PackName:   opts.PackName,
 			Categories: opts.Categories,
@@ -193,7 +167,7 @@ func SendMessage(opts SendOptions) (string, error) {
 			}
 		})
 
-	case MsgEdit:
+	case types.MsgEdit:
 		editMsg := sock.BuildEdit(opts.JID, opts.MessageID, opts.NewMessage)
 		_, err := sock.SendMessage(context.Background(), opts.JID, editMsg)
 		return "", err
@@ -210,7 +184,7 @@ type uploadedMedia struct {
 	FileSHA256    []byte
 }
 
-func sendMedia(opts SendOptions, mediaType whatsmeow.MediaType, build func(uploadedMedia, int64) *waE2E.Message) (string, error) {
+func sendMedia(opts types.SendOptions, mediaType whatsmeow.MediaType, build func(uploadedMedia, int64) *waE2E.Message) (string, error) {
 	data, err := os.ReadFile(opts.FilePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file: %v", err)

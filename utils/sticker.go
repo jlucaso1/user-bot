@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bot/types"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,13 +10,7 @@ import (
 	"strings"
 )
 
-type WebpMetadata struct {
-	Author     string
-	PackName   string
-	Categories []string
-}
-
-func ToWebp(inputPath, outputPath string, metadata *WebpMetadata) (string, error) {
+func ToWebp(inputPath, outputPath string, metadata *types.WebpMetadata) (string, error) {
 	absInputPath, err := filepath.Abs(inputPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get absolute input path: %v", err)

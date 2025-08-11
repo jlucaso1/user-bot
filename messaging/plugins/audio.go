@@ -29,9 +29,9 @@ func SendTestAudio(msg *events.Message, args []string, sock *whatsmeow.Client) {
 		isVoice = true
 	}
 
-	_, _ = client.SendMessage(client.SendOptions{
+	_, _ = client.SendMessage(btypes.SendOptions{
 		JID:         msg.Info.Chat,
-		Type:        client.MsgAudio,
+		Type:        btypes.MsgAudio,
 		FilePath:    audioPath,
 		IsVoiceNote: isVoice,
 	})

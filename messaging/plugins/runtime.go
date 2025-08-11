@@ -27,9 +27,9 @@ func Runtime(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 	uptime := helpers.FormatRuntime(time.Since(helpers.StartedAt))
 	response := fmt.Sprintf("```\nRuntime: %s\n```", uptime)
 
-	_, _ = client.SendMessage(client.SendOptions{
+	_, _ = client.SendMessage(btypes.SendOptions{
 		JID:  msg.Info.Chat,
-		Type: client.MsgText,
+		Type: btypes.MsgText,
 		Text: response,
 	})
 }

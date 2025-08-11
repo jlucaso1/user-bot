@@ -98,7 +98,7 @@ func Help(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 		cmdBlock += "╰───────```\n"
 	}
 
-	client.SendMessage(client.SendOptions{
+	client.SendMessage(types.SendOptions{
 		JID:  msg.Info.Chat,
 		Text: infoBlock + cmdBlock,
 	})

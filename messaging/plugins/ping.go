@@ -6,7 +6,7 @@ import (
 
 	"bot/client"
 	"bot/messaging"
-	btypes "bot/types"
+	"bot/types"
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	messaging.RegisterCommand(&btypes.Command{
+	messaging.RegisterCommand(&types.Command{
 		Name:     "ping",
 		Category: "System",
 		FromMe:   false,
@@ -34,9 +34,9 @@ func Ping(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 	duration := time.Since(start)
 	response := fmt.Sprintf("```Pong (%v)```", duration.Round(time.Millisecond))
 
-	_, _ = client.SendMessage(client.SendOptions{
+	_, _ = client.SendMessage(types.SendOptions{
 		JID:        msg.Info.Chat,
-		Type:       client.MsgEdit,
+		Type:       types.MsgEdit,
 		MessageID:  res.ID,
 		NewMessage: &waE2E.Message{Conversation: &response},
 	})

@@ -47,9 +47,9 @@ func Alive(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 		runtime.GOARCH,
 	)
 
-	_, _ = client.SendMessage(client.SendOptions{
+	_, _ = client.SendMessage(btypes.SendOptions{
 		JID:  msg.Info.Chat,
-		Type: client.MsgText,
+		Type: btypes.MsgText,
 		Text: response,
 	})
 }
