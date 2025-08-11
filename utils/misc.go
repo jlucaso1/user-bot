@@ -128,3 +128,14 @@ func Includes[T comparable](arr []T, val T) bool {
 	}
 	return false
 }
+
+func Ucfirst(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	runes := []rune(s)
+	if runes[0] >= 'a' && runes[0] <= 'z' {
+		runes[0] = runes[0] - ('a' - 'A')
+	}
+	return string(runes)
+}

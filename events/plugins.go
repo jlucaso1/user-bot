@@ -15,7 +15,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 )
 
-var commandRegex = regexp.MustCompile(`(?i)^\. *([a-z0-9_]+)`)
+var commandRegex = regexp.MustCompile(`(?i)^[^\w\s]*([a-z0-9_]+)`)
 
 func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 	if msg.Message == nil {
