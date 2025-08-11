@@ -36,6 +36,9 @@ type SendOptions struct {
 	IsVoiceNote bool
 	MessageID   string
 	NewMessage  *waE2E.Message
+	Author      string
+	PackName    string
+	Categories  []string
 }
 
 var sock *whatsmeow.Client
@@ -164,7 +167,11 @@ func SendMessage(opts SendOptions) (string, error) {
 		tmpWebp := filepath.Join(os.TempDir(), "converted_sticker.webp")
 		defer os.Remove(tmpWebp)
 
-		finalPath, isAnimated, err := utils.ToWebp(opts.FilePath, tmpWebp)
+		finalPath, err := utils.ToWebp(opts.FilePath, tmpWebp, &utils.WebpMetadata{
+			Author:     opts.Author,
+			PackName:   opts.PackName,
+			Categories: opts.Categories,
+		})
 		if err != nil {
 			return "", fmt.Errorf("failed to convert to webp: %v", err)
 		}
@@ -181,7 +188,7 @@ func SendMessage(opts SendOptions) (string, error) {
 					FileEncSHA256: urls.FileEncSHA256,
 					FileSHA256:    urls.FileSHA256,
 					FileLength:    proto.Uint64(uint64(size)),
-					IsAnimated:    proto.Bool(isAnimated),
+					IsAnimated:    proto.Bool(utils.IsWebpAnimated(finalPath)),
 				},
 			}
 		})
@@ -231,6 +238,8 @@ func sendMedia(opts SendOptions, mediaType whatsmeow.MediaType, build func(uploa
 	if err != nil {
 		return "", err
 	}
+
+	os.Remove(opts.FilePath)
 
 	return resp.ID, nil
 }

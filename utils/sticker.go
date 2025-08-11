@@ -2,73 +2,86 @@ package utils
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
 	"strings"
 )
 
-func ToWebp(inputPath, outputPath string) (string, bool, error) {
-	ext := strings.ToLower(strings.TrimPrefix(getFileExt(inputPath), "."))
-	tmpDir := "./webp_tmp"
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
-		return "", false, err
+type WebpMetadata struct {
+	Author     string
+	PackName   string
+	Categories []string
+}
+
+func ToWebp(inputPath, outputPath string, metadata *WebpMetadata) (string, error) {
+	absInputPath, err := filepath.Abs(inputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute input path: %v", err)
 	}
 
-	localWebp := fmt.Sprintf("%s/%s.webp", tmpDir, getBaseName(inputPath))
-	var cmd *exec.Cmd
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(inputPath), "."))
+	videoExts := []string{"mp4", "mov", "mkv", "avi", "webm", "flv", "gif"}
 
-	if isVideo(ext) {
-		cmd = exec.Command("ffmpeg", "-y", "-i", inputPath,
-			"-t", "8",
-			"-vf", "scale=512:512:force_original_aspect_ratio=decrease,fps=15",
-			"-c:v", "libwebp",
-			"-lossless", "0",
-			"-q:v", "50",
-			"-loop", "0",
-			"-an",
-			"-preset", "picture",
-			localWebp)
+	isVideo := slices.Contains(videoExts, ext)
+
+	var mediaType string
+	if isVideo {
+		mediaType = "video"
+	} else if ext == "webp" {
+		mediaType = "webp"
 	} else {
-		cmd = exec.Command("cwebp", "-q", "80", inputPath, "-o", localWebp)
-	}
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return "", false, fmt.Errorf("conversion failed: %v, %s", err, string(out))
+		mediaType = "image"
 	}
 
-	if fi, _ := os.Stat(localWebp); fi != nil && fi.Size() > 800*1024 {
-		if isVideo(ext) {
-			cmd = exec.Command("ffmpeg", "-y", "-i", localWebp,
-				"-c:v", "libwebp", "-lossless", "0", "-q:v", "60", "-preset", "picture", localWebp)
-		} else {
-			cmd = exec.Command("cwebp", "-q", "60", inputPath, "-o", localWebp)
+	args := []string{"./node/webp.js", mediaType, absInputPath}
+
+	if metadata != nil {
+		if metadata.Author != "" {
+			args = append(args, "author", metadata.Author)
 		}
-		if out, err := cmd.CombinedOutput(); err != nil {
-			return "", false, fmt.Errorf("recompression failed: %v, %s", err, string(out))
+		if metadata.PackName != "" {
+			args = append(args, "packname", metadata.PackName)
+		}
+		if len(metadata.Categories) > 0 {
+			args = append(args, "categories", strings.Join(metadata.Categories, ","))
 		}
 	}
 
-	if err := copyFile(localWebp, outputPath); err != nil {
-		return "", false, err
+	cmd := exec.Command("node", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("node webp conversion failed: %v, output: %s", err, string(output))
 	}
 
-	return outputPath, IsWebpAnimated(outputPath), nil
+	baseName := getBaseName(inputPath)
+	tempOutputPath := fmt.Sprintf("%s_sticker.webp", baseName)
+
+	if _, err := os.Stat(tempOutputPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("node webp tool did not create expected output file: %s", tempOutputPath)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return "", fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	if err := copyFile(tempOutputPath, outputPath); err != nil {
+		return "", fmt.Errorf("failed to copy output file: %v", err)
+	}
+
+	os.Remove(tempOutputPath)
+
+	return outputPath, nil
 }
 
-func isVideo(ext string) bool {
-	for _, v := range []string{"mp4", "mov", "mkv", "avi", "webm", "flv", "gif"} {
-		if ext == v {
-			return true
-		}
+func IsWebpAnimated(path string) bool {
+	out, err := exec.Command("webpmux", "-info", path).CombinedOutput()
+	if err != nil {
+		return false
 	}
-	return false
-}
-
-func getFileExt(p string) string {
-	if i := strings.LastIndex(p, "."); i != -1 {
-		return p[i:]
-	}
-	return ""
+	s := string(out)
+	return strings.Contains(s, "Number of frames") && !strings.Contains(s, "Number of frames: 1")
 }
 
 func getBaseName(p string) string {
@@ -83,25 +96,18 @@ func getBaseName(p string) string {
 }
 
 func copyFile(src, dst string) error {
-	s, err := os.Open(src)
+	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
-	d, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	_, err = io.Copy(d, s)
-	return err
-}
+	defer srcFile.Close()
 
-func IsWebpAnimated(path string) bool {
-	out, err := exec.Command("webpmux", "-info", path).CombinedOutput()
+	dstFile, err := os.Create(dst)
 	if err != nil {
-		return false
+		return err
 	}
-	s := string(out)
-	return strings.Contains(s, "Number of frames") && !strings.Contains(s, "Number of frames: 1")
+	defer dstFile.Close()
+
+	_, err = dstFile.ReadFrom(srcFile)
+	return err
 }

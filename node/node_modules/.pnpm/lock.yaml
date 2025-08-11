@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      node-webpmux:
+        specifier: ^3.2.1
+        version: 3.2.1
+
+packages:
+
+  node-webpmux@3.2.1:
+    resolution: {integrity: sha512-MKgpq9nFgo44pIVNx/umD3nkqb2E8oqQTfmstVsfNdx9uV4cX7a4LqA+d8AZd3v5tgJXwENKUFsXNP3bRLP8nQ==}
+
+snapshots:
+
+  node-webpmux@3.2.1: {}

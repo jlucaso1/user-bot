@@ -30,11 +30,15 @@ func Sticker(msg *events.Message, args []string, sock *whatsmeow.Client) {
 	}
 
 	stickerPath := args[0]
+	Author := args[1]
+	PackName := args[2]
 
 	_, err := client.SendMessage(client.SendOptions{
 		JID:      msg.Info.Chat,
 		Type:     client.MsgSticker,
 		FilePath: stickerPath,
+		Author:   Author,
+		PackName: PackName,
 	})
 
 	if err != nil {

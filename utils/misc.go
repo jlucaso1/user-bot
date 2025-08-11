@@ -45,3 +45,80 @@ func ExtractTextFromMessage(msg *waE2E.Message) string {
 	}
 	return ""
 }
+
+func Split(s, sep string) []string {
+	return strings.Split(s, sep)
+}
+
+func Join(arr []string, sep string) string {
+	return strings.Join(arr, sep)
+}
+
+func Map[T any, R any](arr []T, fn func(T) R) []R {
+	out := make([]R, len(arr))
+	for i, v := range arr {
+		out[i] = fn(v)
+	}
+	return out
+}
+
+func ForEach[T any](arr []T, fn func(T)) {
+	for _, v := range arr {
+		fn(v)
+	}
+}
+
+func Filter[T any](arr []T, fn func(T) bool) []T {
+	out := []T{}
+	for _, v := range arr {
+		if fn(v) {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func Some[T any](arr []T, fn func(T) bool) bool {
+	for _, v := range arr {
+		if fn(v) {
+			return true
+		}
+	}
+	return false
+}
+
+func All[T any](arr []T, fn func(T) bool) bool {
+	for _, v := range arr {
+		if !fn(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func Reduce[T any, R any](arr []T, fn func(R, T) R, initial R) R {
+	acc := initial
+	for _, v := range arr {
+		acc = fn(acc, v)
+	}
+	return acc
+}
+
+func Find[T any](arr []T, fn func(T) bool) (T, bool) {
+	for _, v := range arr {
+		if fn(v) {
+			return v, true
+		}
+	}
+	var zero T
+	return zero, false
+}
+
+func Includes[T comparable](arr []T, val T) bool {
+	for _, v := range arr {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
