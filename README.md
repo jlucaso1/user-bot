@@ -1,8 +1,8 @@
-**`xstro golang`**
+### `xstro golang`**
 
 user bot is a free open source tool that works with whatsapp. it is made with golang and uses the [whatsmeow](https://github.com/tulir/whatsmeow) client to connect to whatsapp and do things like send messages, reply to chats, and run tasks for you.
 
-**what you need to understand**
+### what you need to understand
 
 * this tool is not made to spam people.
 * this tool is for educational purposes only.
@@ -11,7 +11,7 @@ user bot is a free open source tool that works with whatsapp. it is made with go
 * this tool stores all your authentication in a local sqlite db file, you can verify by checking [client.go](https://github.com/AstroX11/user-bot/blob/73c386c58ce4ebc09e04c6156572583610eecce0/client.go#L26) file.
 * if you use this tool to perform illegal things such as spam, or stalking, i will not take responsibility for such
 
-**how to use**
+### how to use
 
 * it's built in go lang, if you don't know what go/go-lang programming is, read it's [docs](https://go.dev/).
 * there are some cli packages that are needed for important utility functions, such as creation of stickers, and various media commands that processes image and video files.
@@ -43,7 +43,7 @@ user bot is a free open source tool that works with whatsapp. it is made with go
      USER_PN=12345678912
      ```
 
-**features**
+### features
 
 * send messages such as text, image, video and audio
 * receive all kinds of messages excluding `view_once_message`, because of missing node in message content.
@@ -51,7 +51,7 @@ user bot is a free open source tool that works with whatsapp. it is made with go
 * manage group chats (still in progress)
 * save broadcast messages (whatsapp status) (still in progress) 
 
-**contributing**
+### contributing
 
 anyone can help make this project better. you can fix bugs, add new features, improve the code, or even just update the docs. before you start, please read the [contributing guidelines](https://github.com/AstroX11/user-bot?tab=contributing-ov-file) to understand how i work on this project.
 
