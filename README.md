@@ -45,7 +45,11 @@ user bot is a free open source tool that works with whatsapp. it is made with go
 
 **features**
 
-well basically, it's features are still under development and testing, i'm trying my best, in a few weeks from now, we should have something nice to start work with.
+* send messages such as text, image, video and audio
+* receive all kinds of messages excluding `view_once_message`, because of missing node in message content.
+* send gif and animated sticker
+* manage group chats (still in progress)
+* save broadcast messages (whatsapp status) (still in progress) 
 
 **contributing**
 
