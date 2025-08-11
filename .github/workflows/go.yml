@@ -15,7 +15,7 @@ jobs:
     - name: set up go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: 'latest'
 
     - name: build
       run: go build -v ./... || true
