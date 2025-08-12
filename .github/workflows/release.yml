@@ -56,7 +56,7 @@ jobs:
           mkdir -p dist/source
           rsync -a --exclude 'dist' ./ dist/source/
           for os in windows linux darwin; do
-            GOOS=$os GOARCH=amd64 go build -o dist/myapp-$os .
+            GOOS=$os GOARCH=amd64 go build -o dist/bot-$os .
           done
 
       - name: upload artifacts
@@ -67,7 +67,8 @@ jobs:
           if-no-files-found: error
 
       - name: create release
-        if: steps.type.outputs.type == 'release'
+        if: |
+          steps.type.outputs.type == 'release' || steps.type.outputs.type == 'nightly'
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.ver.outputs.version }}
