@@ -123,8 +123,8 @@ func Find[T any](arr []T, fn func(T) bool) (T, bool) {
 }
 
 func Includes[T comparable](arr []T, val T) bool {
-	for _, v := range arr {
-		if v == val {
+	for i := 0; i < len(arr); i++ {
+		if arr[i] == val {
 			return true
 		}
 	}
@@ -142,7 +142,7 @@ func Ucfirst(s string) string {
 	return string(runes)
 }
 
-func LogPretty(v interface{}) {
+func LogPretty(v any) {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		fmt.Println("error:", err)
