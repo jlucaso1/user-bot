@@ -39,6 +39,14 @@ func GetSender(id string) (*botypes.PNLID, error) {
 		return nil, err
 	}
 
+	if !strings.HasSuffix(res.PN, "@s.whatsapp.net") {
+		res.PN += "@s.whatsapp.net"
+	}
+
+	if !strings.HasSuffix(res.LID, "@lid") {
+		res.LID += "@lid"
+	}
+
 	return &res, nil
 }
 
@@ -73,8 +81,18 @@ func SaveSender(a, b string) error {
 }
 
 func CleanID(s string) string {
+	start := 0
+	for start < len(s) {
+		r := rune(s[start])
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			break
+		}
+		start++
+	}
+	s = s[start:]
+
 	for i, r := range s {
-		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9') {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')) {
 			return s[:i]
 		}
 	}

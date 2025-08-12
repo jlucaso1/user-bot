@@ -22,7 +22,8 @@ func EventHandler(sock *whatsmeow.Client, evt interface{}) {
 	if !connectedSent {
 		if sock.Store.ID != nil {
 			jid := sock.Store.ID.ToNonAD()
-			lid := sock.Store.LID.ToNonAD()
+			lid := sock.Store.LID.ToNonAD().String()
+			
 			parts := strings.SplitN(jid.String(), "@", 2)
 
 			msg := "bot connected\n" +
@@ -38,7 +39,7 @@ func EventHandler(sock *whatsmeow.Client, evt interface{}) {
 					},
 				},
 			})
-			sql.SetSudo(jid.String(), lid.String())
+			sql.SetSudo(jid.String(), lid)
 			if err == nil {
 				connectedSent = true
 			}
@@ -48,7 +49,7 @@ func EventHandler(sock *whatsmeow.Client, evt interface{}) {
 
 	switch evt := evt.(type) {
 	case *events.Message:
-		client.SaveSender(evt.Info.Sender.User, evt.Info.SenderAlt.User)
+		client.SaveSender(client.CleanID(evt.Info.Sender.String()), client.CleanID(evt.Info.SenderAlt.String()))
 		Plugins(sock, evt)
 	}
 }

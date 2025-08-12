@@ -39,10 +39,8 @@ func init() {
 			if botName == "" {
 				botName = "ᴜsᴇʀ ʙᴏᴛ"
 			}
-			pushName := msg.Info.PushName
-			if pushName == "" {
-				pushName = "Unknown"
-			}
+			User := msg.Info.Sender
+
 			mode, err := sql.GetMode()
 			if err != nil || mode == "" {
 				mode = "Public"
@@ -66,7 +64,7 @@ func init() {
 			sort.Strings(categories)
 
 			infoBlock := fmt.Sprintf("```╭─── %s ────\n", botName) +
-				fmt.Sprintf("│ User: %s\n", pushName) +
+				fmt.Sprintf("│ User: @%s\n", User.User) +
 				fmt.Sprintf("│ Owner: %s\n", owner) +
 				fmt.Sprintf("│ Plugins: %d\n", len(allCommands)) +
 				fmt.Sprintf("│ Mode: %s\n", mode) +
@@ -99,7 +97,12 @@ func init() {
 			}
 
 			sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
-				Conversation: proto.String(infoBlock + cmdBlock),
+				ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+					Text: proto.String(infoBlock + cmdBlock),
+					ContextInfo: &waE2E.ContextInfo{
+						MentionedJID: []string{User.String()},
+					},
+				},
 			})
 		},
 	})

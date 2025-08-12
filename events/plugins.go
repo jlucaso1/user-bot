@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var commandRegex = regexp.MustCompile(`(?i)^[^\w\s]*([a-z0-9_]+)`)
+var commandRegex = regexp.MustCompile(`(?i)^[^\w\s]*\s*([a-z0-9_]+)`)
 
 func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 	if msg.Message == nil {
@@ -48,8 +48,17 @@ func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 
 	cmd := messaging.FindCommand(cmdName)
 
-	isSudo, err := sql.IsSudo(msg.Info.Sender.User)
+	isSudo, err := sql.IsSudo(msg.Info.Sender.ToNonAD().String())
 	if err != nil {
+		return
+	}
+
+	Mode, err := sql.GetMode()
+	if err != nil {
+		return
+	}
+
+	if Mode == "Private" && !isSudo {
 		return
 	}
 

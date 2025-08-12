@@ -35,8 +35,11 @@ func SetSudo(id1, id2 string) error {
 		return errors.New("invalid jid: must end with @s.whatsapp.net")
 	}
 
-	if !strings.HasPrefix(lid, "@") {
-		lid = "@" + lid
+	if !strings.HasSuffix(jid, "@s.whatsapp.net") {
+		jid = clid(jid) + "@s.whatsapp.net"
+	}
+	if !strings.HasSuffix(lid, "@lid") {
+		lid = clid(lid) + "@lid"
 	}
 
 	_, err := Conn.Exec(`INSERT OR REPLACE INTO sudo (jid, lid) VALUES (?, ?)`, jid, lid)
@@ -60,6 +63,32 @@ func GetSudo(jid string) (string, string, error) {
 		return "", "", err
 	}
 	return outJid, outLid, nil
+}
+
+func ListSudo() ([]string, error) {
+	if Conn == nil {
+		return nil, errors.New("db connection not initialized")
+	}
+	if err := syncSudo(); err != nil {
+		return nil, err
+	}
+
+	rows, err := Conn.Query(`SELECT jid FROM sudo`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sudos []string
+	for rows.Next() {
+		var jid string
+		if err := rows.Scan(&jid); err != nil {
+			return nil, err
+		}
+		sudos = append(sudos, jid)
+	}
+
+	return sudos, rows.Err()
 }
 
 func DelSudo(jid string) error {
@@ -87,4 +116,24 @@ func IsSudo(value string) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+
+func clid(s string) string {
+	start := 0
+	for start < len(s) {
+		r := rune(s[start])
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			break
+		}
+		start++
+	}
+	s = s[start:]
+
+	for i, r := range s {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')) {
+			return s[:i]
+		}
+	}
+	return s
 }
