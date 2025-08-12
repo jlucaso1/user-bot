@@ -13,111 +13,67 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: fetch all tags
+      - name: fetch tags
         run: git fetch --tags
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.4" # Updated to latest stable version
+          go-version: "1.23.4"
 
-      - name: determine release vs nightly
-        id: type
+      - name: determine version
+        id: version
         run: |
           msg=$(git log -1 --pretty=%s)
-          type=$( [[ "$msg" == chore:* ]] && echo release || echo nightly )
-          echo "type=$type" >> $GITHUB_OUTPUT
-
-      - name: compute version
-        id: ver
-        run: |
-          if [[ "${{ steps.type.outputs.type }}" == "release" ]]; then
-            tag=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "v0.1.0-${GITHUB_SHA::7}")
-            echo "version=$tag" >> $GITHUB_OUTPUT
+          if [[ "$msg" == chore:* ]]; then
+            # Release version - try to get exact tag, fallback to commit
+            version=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "v0.1.0-${GITHUB_SHA::7}")
+            echo "prerelease=false" >> $GITHUB_OUTPUT
           else
-            echo "version=nightly-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            # Nightly version
+            version="nightly-${GITHUB_SHA::7}"
+            echo "prerelease=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: collect release notes
-        id: notes
-        run: |
-          last_tag=$(git describe --tags --abbrev=0 @^ 2>/dev/null || echo "")
-          range="${last_tag:+$last_tag..}HEAD"
-          notes=$(git log $range --pretty=format:"- [%h] %s" || echo "- Initial release")
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$notes" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: build binaries
         run: |
-          mkdir -p dist/bin dist/source
-          rsync -a --exclude 'dist' ./ dist/source/
+          mkdir -p dist
 
-          # Build for different platforms with proper cross-compilation
-          GOOS=windows GOARCH=amd64 go build -o dist/bin/xstro-windows.exe
-          GOOS=linux GOARCH=amd64 go build -o dist/bin/xstro-linux
-          GOOS=darwin GOARCH=amd64 go build -o dist/bin/xstro-darwin
+          # Build for different platforms
+          GOOS=windows GOARCH=amd64 go build -o dist/xstro-windows-amd64.exe
+          GOOS=linux GOARCH=amd64 go build -o dist/xstro-linux-amd64
+          GOOS=darwin GOARCH=amd64 go build -o dist/xstro-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -o dist/xstro-darwin-arm64
 
-      - name: prepare AppDir and icon
+      - name: create archives
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/icons
-          cp dist/bin/xstro-linux AppDir/usr/bin/xstro
-          chmod +x AppDir/usr/bin/xstro
+          version=${{ steps.version.outputs.version }}
 
-          # Create icon (ensure this file exists in your repo)
-          if [ -f resources/logo.png ]; then
-            cp resources/logo.png AppDir/usr/share/icons/xstro.png
-          else
-            # Create a simple placeholder icon if logo doesn't exist
-            echo "Warning: resources/logo.png not found, creating placeholder"
-            mkdir -p resources
-            # Create a simple 64x64 PNG placeholder
-            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" | base64 -d > AppDir/usr/share/icons/xstro.png
-          fi
+          # Create tar.gz for Unix systems
+          tar -czf xstro-${version}.tar.gz -C dist .
 
-      - name: create desktop file
-        run: |
-          mkdir -p AppDir/usr/share/applications
-          cat > AppDir/usr/share/applications/xstro.desktop << EOF
-          [Desktop Entry]
-          Type=Application
-          Name=xstro
-          Exec=xstro
-          Icon=xstro
-          Comment=Xstro Application
-          Categories=Utility;
-          EOF
-
-      - name: build AppImage
-        uses: AppImageCrafters/build-appimage-action@master
-        with:
-          recipe: ./AppImageBuilder.yml
-        env:
-          VERSION: ${{ steps.ver.outputs.version }}
-
-      - name: create tar.zst
-        run: |
-          version=${{ steps.ver.outputs.version }}
-          tar -C dist/bin -c . | zstd -o xstro-${version}.tar.zst
-
-      - name: create zip
-        run: |
-          version=${{ steps.ver.outputs.version }}
-          cd dist/bin && zip -r ../../xstro-${version}.zip .
+          # Create zip for Windows
+          cd dist && zip -r ../xstro-${version}.zip . && cd ..
 
       - name: create release
-        if: steps.type.outputs.type == 'release' || steps.type.outputs.type == 'nightly'
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.ver.outputs.version }}
-          name: Release ${{ steps.ver.outputs.version }}
-          prerelease: ${{ steps.type.outputs.type == 'nightly' }}
+          tag: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
           body: |
-            **Changes since last release:**
-            ${{ steps.notes.outputs.notes }}
+            **Download the right binary for your system:**
+            - **Windows**: `xstro-windows-amd64.exe`
+            - **Linux**: `xstro-linux-amd64`
+            - **macOS Intel**: `xstro-darwin-amd64`
+            - **macOS Apple Silicon**: `xstro-darwin-arm64`
+
+            Or download the archives:
+            - `xstro-${{ steps.version.outputs.version }}.tar.gz` (Unix/Linux)
+            - `xstro-${{ steps.version.outputs.version }}.zip` (Windows)
           artifacts: |
-            dist/bin/*
-            xstro-${{ steps.ver.outputs.version }}.tar.zst
-            xstro-${{ steps.ver.outputs.version }}.zip
-            *.AppImage
+            dist/*
+            xstro-${{ steps.version.outputs.version }}.tar.gz
+            xstro-${{ steps.version.outputs.version }}.zip
           allowUpdates: true
-          makeLatest: ${{ steps.type.outputs.type == 'release' }}
+          makeLatest: ${{ steps.version.outputs.prerelease == 'false' }}
