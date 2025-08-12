@@ -54,15 +54,17 @@ jobs:
       - name: build binaries
         run: |
           mkdir -p dist/source
-          # choose your preferred copy method
-          cp -r . dist/source/.          # option 1
-          # or: cp -rT . dist/source     # option 2
-          # or: rsync -a . dist/source   # option 3
-
-          mkdir -p dist
+          rsync -a --exclude 'dist' ./ dist/source/
           for os in windows linux darwin; do
             GOOS=$os GOARCH=amd64 go build -o dist/myapp-$os .
           done
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.type.outputs.type }}-build-${{ steps.ver.outputs.version }}
+          path: dist/
+          if-no-files-found: error
 
       - name: create release
         if: steps.type.outputs.type == 'release'
@@ -73,4 +75,4 @@ jobs:
           body: |
             **changes since last release**
             ${{ steps.notes.outputs.notes }}
-          files: dist/
+          files: dist/*
