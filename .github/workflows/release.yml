@@ -21,11 +21,7 @@ jobs:
         id: type
         run: |
           msg=$(git log -1 --pretty=%s)
-          if [[ "$msg" == chore:* ]]; then
-            echo "type=release" >> $GITHUB_OUTPUT
-          else
-            echo "type=nightly" >> $GITHUB_OUTPUT
-          fi
+          echo "type=$( [[ \"$msg\" == chore:* ]] && echo release || echo nightly )" >> $GITHUB_OUTPUT
 
       - name: compute version
         id: ver
@@ -42,11 +38,8 @@ jobs:
         run: |
           git fetch --tags
           last_tag=$(git describe --tags --abbrev=0 || echo "")
-          if [[ -n "$last_tag" ]]; then
-            notes=$(git log "$last_tag"..HEAD --pretty=format:"- [%h] %s")
-          else
-            notes=$(git log HEAD --pretty=format:"- [%h] %s")
-          fi
+          range="${last_tag:+$last_tag..}HEAD"
+          notes=$(git log $range --pretty=format:"- [%h] %s%n%b")
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -55,8 +48,9 @@ jobs:
         run: |
           mkdir -p dist/source
           rsync -a --exclude 'dist' ./ dist/source/
+          mkdir -p dist/bin
           for os in windows linux darwin; do
-            GOOS=$os GOARCH=amd64 go build -o dist/bot-$os .
+            GOOS=$os GOARCH=amd64 go build -o dist/bin/xstro-$os .
           done
 
       - name: upload artifacts
@@ -66,14 +60,15 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-      - name: create release
-        if: |
-          steps.type.outputs.type == 'release' || steps.type.outputs.type == 'nightly'
+      - name: create release (with binaries)
+        if: steps.type.outputs.type == 'release' || steps.type.outputs.type == 'nightly'
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.ver.outputs.version }}
           name: Release ${{ steps.ver.outputs.version }}
+          prerelease: ${{ steps.type.outputs.type == 'nightly' }}
           body: |
             **changes since last release**
             ${{ steps.notes.outputs.notes }}
-          files: dist/*
+          artifacts: "dist/bin/*, dist/source"
+          allowUpdates: true
