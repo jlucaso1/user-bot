@@ -7,17 +7,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: setup go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.24.5
 
-      - name: detect release type
+      - name: determine release vs nightly
         id: type
         run: |
           msg=$(git log -1 --pretty=%s)
@@ -27,7 +27,7 @@ jobs:
             echo "type=nightly" >> $GITHUB_OUTPUT
           fi
 
-      - name: determine version
+      - name: compute version
         id: ver
         run: |
           if [[ "${{ steps.type.outputs.type }}" == "release" ]]; then
@@ -41,11 +41,11 @@ jobs:
         id: notes
         run: |
           git fetch --tags
-          last_tag=$(git describe --tags --abbrev=0 || echo "none")
-          if [[ "$last_tag" != "none" ]]; then
-            notes=$(git log $last_tag..HEAD --pretty=format:"- %h %s")
+          last_tag=$(git describe --tags --abbrev=0 || echo "")
+          if [[ -n "$last_tag" ]]; then
+            notes=$(git log "$last_tag"..HEAD --pretty=format:"- [%h] %s")
           else
-            notes=$(git log --pretty=format:"- %h %s")
+            notes=$(git log HEAD --pretty=format:"- [%h] %s")
           fi
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT
@@ -60,10 +60,11 @@ jobs:
           cp -r . dist/source
 
       - name: upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.type.outputs.type }}-build-${{ steps.ver.outputs.version }}
           path: dist/
+          if-no-files-found: error
 
       - name: create release
         if: steps.type.outputs.type == 'release'
