@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"time"
 
-	"bot/client"
+	bclient "bot/client"
 	"bot/messaging"
 	btypes "bot/types"
 
@@ -43,7 +43,7 @@ func init() {
 				runtime.GOARCH,
 			)
 
-			_, _ = client.SendMessage(btypes.SendOptions{
+			_, _ = bclient.SendMessage(btypes.SendOptions{
 				JID:  msg.Info.Chat,
 				Type: btypes.MsgText,
 				Text: response,

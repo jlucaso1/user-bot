@@ -6,10 +6,13 @@ import (
 	"testing"
 )
 
-func TestGetPrefix(t *testing.T) {
+func TestFunctions(t *testing.T) {
 	prefix, err := sql.GetPrefix()
 	if err != nil {
 		t.Fatal(err)
 	}
 	log.Println("Current Prefix is:", prefix)
+
+	
 }
+

@@ -12,7 +12,9 @@ import (
 	"bot/utils"
 
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 var commandRegex = regexp.MustCompile(`(?i)^[^\w\s]*([a-z0-9_]+)`)
@@ -45,6 +47,26 @@ func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 	args := strings.Fields(messageText)[1:]
 
 	cmd := messaging.FindCommand(cmdName)
+
+	isSudo, err := sql.IsSudo(msg.Info.Sender.User)
+	if err != nil {
+		return
+	}
+
+	if cmd.FromMe && !isSudo {
+		sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
+			Conversation: proto.String("_this command is for sudo users_"),
+		})
+		return
+	}
+
+	if cmd.IsGroup && !msg.Info.IsGroup {
+		sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
+			Conversation: proto.String("_this command is for groups_"),
+		})
+		return
+	}
+
 	if cmd != nil {
 		cmd.Handler(msg, args, sock)
 		return
