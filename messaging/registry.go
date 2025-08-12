@@ -21,6 +21,11 @@ func FindCommand(name string) *types.Command {
 	return commandRegistry[strings.ToLower(name)]
 }
 
+func IsCommand(name string) bool {
+	_, exists := commandRegistry[strings.ToLower(name)]
+	return exists
+}
+
 func SuggestCommand(input string) string {
 	bestMatch := ""
 	highestScore := 0

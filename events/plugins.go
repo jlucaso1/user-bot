@@ -94,3 +94,69 @@ func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 		})
 	}
 }
+
+func Sticker(sock *whatsmeow.Client, msg *events.Message) {
+	if msg.Message == nil || msg.Message.StickerMessage == nil {
+		return
+	}
+
+	stickerHash := fmt.Sprintf("%x", msg.Message.StickerMessage.FileSHA256)
+	if stickerHash == "" {
+		return
+	}
+
+	rows, err := sql.Conn.Query(`SELECT cmd FROM stickercmd WHERE value = ?`, stickerHash)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	var cmdName string
+	found := false
+	for rows.Next() {
+		if err := rows.Scan(&cmdName); err != nil {
+			continue
+		}
+		found = true
+		break
+	}
+
+	if !found {
+		return
+	}
+
+	cmd := messaging.FindCommand(cmdName)
+	if cmd == nil {
+		return
+	}
+
+	isSudo, err := sql.IsSudo(msg.Info.Sender.ToNonAD().String())
+	if err != nil {
+		return
+	}
+
+	mode, err := sql.GetMode()
+	if err != nil {
+		return
+	}
+
+	if mode == "Private" && !isSudo {
+		return
+	}
+
+	if cmd.FromMe && !isSudo {
+		sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
+			Conversation: proto.String("_this command is for sudo users_"),
+		})
+		return
+	}
+
+	if cmd.IsGroup && !msg.Info.IsGroup {
+		sock.SendMessage(sock.BackgroundEventCtx, msg.Info.Chat, &waE2E.Message{
+			Conversation: proto.String("_this command is for groups_"),
+		})
+		return
+	}
+
+	cmd.Handler(msg, []string{}, sock)
+}

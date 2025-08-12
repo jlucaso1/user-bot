@@ -13,6 +13,4 @@ func TestFunctions(t *testing.T) {
 	}
 	log.Println("Current Prefix is:", prefix)
 
-	
 }
-

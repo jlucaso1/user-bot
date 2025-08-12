@@ -98,14 +98,12 @@ func PortServe() {
 	go func() {
 		for {
 			time.Sleep(45 * time.Second)
-			ip := getLocalIP()
-			now := time.Now().Format("15:04:05.000")
-			fmt.Printf("\033[36m%s [Local IP] %s\033[0m\n", now, ip)
+			getLocalIP()
 		}
 	}()
 
-	now := time.Now().Format("15:04:05.000")
-	fmt.Printf("\033[34m%s [Client INFO] started on port: 8000\033[0m\n", now)
+	ip := getLocalIP()
+	fmt.Printf("[Local Host 8000] IP %s\n", ip)
 
 	if err := http.ListenAndServe(":8000", nil); err != nil {
 		panic(err)

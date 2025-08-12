@@ -23,7 +23,7 @@ func EventHandler(sock *whatsmeow.Client, evt interface{}) {
 		if sock.Store.ID != nil {
 			jid := sock.Store.ID.ToNonAD()
 			lid := sock.Store.LID.ToNonAD().String()
-			
+
 			parts := strings.SplitN(jid.String(), "@", 2)
 
 			msg := "bot connected\n" +
@@ -49,7 +49,21 @@ func EventHandler(sock *whatsmeow.Client, evt interface{}) {
 
 	switch evt := evt.(type) {
 	case *events.Message:
-		client.SaveSender(client.CleanID(evt.Info.Sender.String()), client.CleanID(evt.Info.SenderAlt.String()))
-		Plugins(sock, evt)
+		go client.SaveSender(client.CleanID(evt.Info.Sender.String()), client.CleanID(evt.Info.SenderAlt.String()))
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			Plugins(sock, evt)
+		}()
+
+		go func() {
+			defer wg.Done()
+			Sticker(sock, evt)
+		}()
+
+		wg.Wait()
 	}
 }
