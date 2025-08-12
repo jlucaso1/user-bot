@@ -59,7 +59,7 @@ jobs:
 
       - name: prepare AppDir and icon
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/icons AppDir/usr/share/applications
+          mkdir -p AppDir/usr/bin AppDir/usr/share/icons
           cp dist/bin/xstro-linux AppDir/usr/bin/xstro
           chmod +x AppDir/usr/bin/xstro
 
@@ -68,11 +68,15 @@ jobs:
             cp resources/logo.png AppDir/usr/share/icons/xstro.png
           else
             # Create a simple placeholder icon if logo doesn't exist
-            echo "Warning: resources/logo.png not found, you may need to add an icon"
+            echo "Warning: resources/logo.png not found, creating placeholder"
+            mkdir -p resources
+            # Create a simple 64x64 PNG placeholder
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" | base64 -d > AppDir/usr/share/icons/xstro.png
           fi
 
       - name: create desktop file
         run: |
+          mkdir -p AppDir/usr/share/applications
           cat > AppDir/usr/share/applications/xstro.desktop << EOF
           [Desktop Entry]
           Type=Application
@@ -84,7 +88,7 @@ jobs:
           EOF
 
       - name: build AppImage
-        uses: AppImageCrafters/build-appimage-action@v1.3
+        uses: AppImageCrafters/build-appimage-action@master
         with:
           recipe: ./AppImageBuilder.yml
         env:
