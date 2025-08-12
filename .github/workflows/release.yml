@@ -1,0 +1,77 @@
+name: build-and-release
+
+on:
+  push:
+    branches: [core]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: setup go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24.5
+
+      - name: detect release type
+        id: type
+        run: |
+          msg=$(git log -1 --pretty=%s)
+          if [[ "$msg" == chore:* ]]; then
+            echo "type=release" >> $GITHUB_OUTPUT
+          else
+            echo "type=nightly" >> $GITHUB_OUTPUT
+          fi
+
+      - name: determine version
+        id: ver
+        run: |
+          if [[ "${{ steps.type.outputs.type }}" == "release" ]]; then
+            tag=$(git describe --tags --exact-match HEAD || echo "${GITHUB_SHA::7}")
+            echo "version=$tag" >> $GITHUB_OUTPUT
+          else
+            echo "version=nightly-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: collect release notes
+        id: notes
+        run: |
+          git fetch --tags
+          last_tag=$(git describe --tags --abbrev=0 || echo "none")
+          if [[ "$last_tag" != "none" ]]; then
+            notes=$(git log $last_tag..HEAD --pretty=format:"- %h %s")
+          else
+            notes=$(git log --pretty=format:"- %h %s")
+          fi
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$notes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: build binaries
+        run: |
+          mkdir -p dist
+          for os in windows linux darwin; do
+            GOOS=$os GOARCH=amd64 go build -o dist/myapp-$os .
+          done
+          cp -r . dist/source
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.type.outputs.type }}-build-${{ steps.ver.outputs.version }}
+          path: dist/
+
+      - name: create release
+        if: steps.type.outputs.type == 'release'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.ver.outputs.version }}
+          name: Release ${{ steps.ver.outputs.version }}
+          body: |
+            **changes since last release**
+            ${{ steps.notes.outputs.notes }}
+          files: dist/
