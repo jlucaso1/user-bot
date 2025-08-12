@@ -13,9 +13,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v4
+      - name: fetch all tags
+        run: git fetch --tags
+
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.24.5
+          go-version: "1.23.4" # Updated to latest stable version
 
       - name: determine release vs nightly
         id: type
@@ -28,7 +31,7 @@ jobs:
         id: ver
         run: |
           if [[ "${{ steps.type.outputs.type }}" == "release" ]]; then
-            tag=$(git describe --tags --exact-match HEAD || echo "${GITHUB_SHA::7}")
+            tag=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "v0.1.0-${GITHUB_SHA::7}")
             echo "version=$tag" >> $GITHUB_OUTPUT
           else
             echo "version=nightly-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
@@ -37,10 +40,9 @@ jobs:
       - name: collect release notes
         id: notes
         run: |
-          git fetch --tags
-          last_tag=$(git describe --tags --abbrev=0 @^ || echo "")
+          last_tag=$(git describe --tags --abbrev=0 @^ 2>/dev/null || echo "")
           range="${last_tag:+$last_tag..}HEAD"
-          notes=$(git log $range --pretty=format:"- [%h] %s%n%b")
+          notes=$(git log $range --pretty=format:"- [%h] %s" || echo "- Initial release")
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -49,24 +51,44 @@ jobs:
         run: |
           mkdir -p dist/bin dist/source
           rsync -a --exclude 'dist' ./ dist/source/
-          for os in windows linux darwin; do
-            if [[ "$os" == "windows" ]]; then
-              go build -o dist/bin/xstro-windows.exe
-            else
-              go build -o dist/bin/xstro-$os
-            fi
-          done
+
+          # Build for different platforms with proper cross-compilation
+          GOOS=windows GOARCH=amd64 go build -o dist/bin/xstro-windows.exe
+          GOOS=linux GOARCH=amd64 go build -o dist/bin/xstro-linux
+          GOOS=darwin GOARCH=amd64 go build -o dist/bin/xstro-darwin
 
       - name: prepare AppDir and icon
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/icons
+          mkdir -p AppDir/usr/bin AppDir/usr/share/icons AppDir/usr/share/applications
           cp dist/bin/xstro-linux AppDir/usr/bin/xstro
-          cp resources/logo.png AppDir/usr/share/icons/xstro.png
+          chmod +x AppDir/usr/bin/xstro
+
+          # Create icon (ensure this file exists in your repo)
+          if [ -f resources/logo.png ]; then
+            cp resources/logo.png AppDir/usr/share/icons/xstro.png
+          else
+            # Create a simple placeholder icon if logo doesn't exist
+            echo "Warning: resources/logo.png not found, you may need to add an icon"
+          fi
+
+      - name: create desktop file
+        run: |
+          cat > AppDir/usr/share/applications/xstro.desktop << EOF
+          [Desktop Entry]
+          Type=Application
+          Name=xstro
+          Exec=xstro
+          Icon=xstro
+          Comment=Xstro Application
+          Categories=Utility;
+          EOF
 
       - name: build AppImage
-        uses: AppImageCrafters/build-appimage-action@master
+        uses: AppImageCrafters/build-appimage-action@v1.3
         with:
           recipe: ./AppImageBuilder.yml
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
 
       - name: create tar.zst
         run: |
@@ -76,7 +98,7 @@ jobs:
       - name: create zip
         run: |
           version=${{ steps.ver.outputs.version }}
-          zip -r xstro-${version}.zip dist/bin
+          cd dist/bin && zip -r ../../xstro-${version}.zip .
 
       - name: create release
         if: steps.type.outputs.type == 'release' || steps.type.outputs.type == 'nightly'
@@ -86,11 +108,12 @@ jobs:
           name: Release ${{ steps.ver.outputs.version }}
           prerelease: ${{ steps.type.outputs.type == 'nightly' }}
           body: |
-            **changes since last release**
+            **Changes since last release:**
             ${{ steps.notes.outputs.notes }}
           artifacts: |
-            dist/bin/*,
-            xstro-${{ steps.ver.outputs.version }}.tar.zst,
-            xstro-${{ steps.ver.outputs.version }}.zip,
+            dist/bin/*
+            xstro-${{ steps.ver.outputs.version }}.tar.zst
+            xstro-${{ steps.ver.outputs.version }}.zip
             *.AppImage
           allowUpdates: true
+          makeLatest: ${{ steps.type.outputs.type == 'release' }}
