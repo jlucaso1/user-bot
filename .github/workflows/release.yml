@@ -35,6 +35,27 @@ jobs:
           fi
           echo "version=$version" >> $GITHUB_OUTPUT
 
+      - name: collect release notes
+        id: notes
+        run: |
+          # Find the last commit with "chore:" in the message
+          last_chore=$(git log --oneline --grep="^chore:" -1 --format="%H" || echo "")
+
+          if [[ -n "$last_chore" ]]; then
+            # Get commits since the last chore commit (excluding the chore commit itself)
+            range="${last_chore}..HEAD"
+          else
+            # No previous chore commit found, get all commits
+            range="HEAD"
+          fi
+
+          # Generate release notes
+          notes=$(git log $range --pretty=format:"- **%h** %s%n%b" --no-merges | grep -v "^$" || echo "- Initial release")
+
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$notes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: build binaries
         run: |
           mkdir -p dist
@@ -62,6 +83,10 @@ jobs:
           name: ${{ steps.version.outputs.version }}
           prerelease: ${{ steps.version.outputs.prerelease }}
           body: |
+            **Changes since last release:**
+            ${{ steps.notes.outputs.notes }}
+
+            ---
             **Download the right binary for your system:**
             - **Windows**: `xstro-windows-amd64.exe`
             - **Linux**: `xstro-linux-amd64`
