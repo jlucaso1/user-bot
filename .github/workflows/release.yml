@@ -21,7 +21,8 @@ jobs:
         id: type
         run: |
           msg=$(git log -1 --pretty=%s)
-          echo "type=$( [[ \"$msg\" == chore:* ]] && echo release || echo nightly )" >> $GITHUB_OUTPUT
+          type=$( [[ "$msg" == chore:* ]] && echo release || echo nightly )
+          echo "type=$type" >> $GITHUB_OUTPUT
 
       - name: compute version
         id: ver
@@ -37,7 +38,7 @@ jobs:
         id: notes
         run: |
           git fetch --tags
-          last_tag=$(git describe --tags --abbrev=0 || echo "")
+          last_tag=$(git describe --tags --abbrev=0 @^ || echo "")
           range="${last_tag:+$last_tag..}HEAD"
           notes=$(git log $range --pretty=format:"- [%h] %s%n%b")
           echo "notes<<EOF" >> $GITHUB_OUTPUT
@@ -46,11 +47,10 @@ jobs:
 
       - name: build binaries
         run: |
-          mkdir -p dist/source
+          mkdir -p dist/source dist/bin
           rsync -a --exclude 'dist' ./ dist/source/
-          mkdir -p dist/bin
           for os in windows linux darwin; do
-            GOOS=$os GOARCH=amd64 go build -o dist/bin/xstro-$os .
+            GOOS=$os GOARCH=amd64 go build -o dist/bin/xstro-${os}
           done
 
       - name: upload artifacts
