@@ -47,20 +47,38 @@ jobs:
 
       - name: build binaries
         run: |
-          mkdir -p dist/source dist/bin
+          mkdir -p dist/bin dist/source
           rsync -a --exclude 'dist' ./ dist/source/
           for os in windows linux darwin; do
-            GOOS=$os GOARCH=amd64 go build -o dist/bin/xstro-${os}
+            if [[ "$os" == "windows" ]]; then
+              go build -o dist/bin/xstro-windows.exe
+            else
+              go build -o dist/bin/xstro-$os
+            fi
           done
 
-      - name: upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.type.outputs.type }}-build-${{ steps.ver.outputs.version }}
-          path: dist/
-          if-no-files-found: error
+      - name: prepare AppDir and icon
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/share/icons
+          cp dist/bin/xstro-linux AppDir/usr/bin/xstro
+          cp resources/logo.png AppDir/usr/share/icons/xstro.png
 
-      - name: create release (with binaries)
+      - name: build AppImage
+        uses: AppImageCrafters/build-appimage-action@master
+        with:
+          recipe: ./AppImageBuilder.yml
+
+      - name: create tar.zst
+        run: |
+          version=${{ steps.ver.outputs.version }}
+          tar -C dist/bin -c . | zstd -o xstro-${version}.tar.zst
+
+      - name: create zip
+        run: |
+          version=${{ steps.ver.outputs.version }}
+          zip -r xstro-${version}.zip dist/bin
+
+      - name: create release
         if: steps.type.outputs.type == 'release' || steps.type.outputs.type == 'nightly'
         uses: ncipollo/release-action@v1
         with:
@@ -70,5 +88,9 @@ jobs:
           body: |
             **changes since last release**
             ${{ steps.notes.outputs.notes }}
-          artifacts: "dist/bin/*, dist/source"
+          artifacts: |
+            dist/bin/*,
+            xstro-${{ steps.ver.outputs.version }}.tar.zst,
+            xstro-${{ steps.ver.outputs.version }}.zip,
+            *.AppImage
           allowUpdates: true

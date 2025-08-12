@@ -1,0 +1,11 @@
+AppDir:
+  app_info:
+    name: xstro
+    icon: xstro        # refers to xstro.png
+    exec: usr/bin/xstro
+    version: "${VERSION}"
+
+files:
+  include:
+    - AppDir/usr/share/icons/xstro.png
+    - AppDir/usr/bin/xstro           # linux binary
