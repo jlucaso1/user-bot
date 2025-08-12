@@ -12,7 +12,7 @@ AppDir:
     exec_args: $@
 
   runtime:
-    arch: x86_64
+    arch: [x86_64]
     env:
       PATH: "${APPDIR}/usr/bin:${PATH}"
 
@@ -37,5 +37,5 @@ AppDir:
       use_host_x: true
 
 AppImage:
-  arch: x86_64
+  arch: [x86_64]
   file_name: xstro-${VERSION}.AppImage
