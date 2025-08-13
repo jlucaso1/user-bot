@@ -19,13 +19,22 @@ import (
 
 var commandRegex = regexp.MustCompile(`(?i)^[^\w\s]*\s*([a-z0-9_]+)`)
 
+func safeExecute(handler func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("[panic recovered] %v\n", r)
+		}
+	}()
+	handler()
+}
+
 func Plugins(sock *whatsmeow.Client, msg *events.Message) {
-	if msg.Message == nil {
+	if sock == nil || msg == nil || msg.Message == nil {
 		return
 	}
 
 	messageText := utils.ExtractTextFromMessage(msg.Message)
-	if messageText == "" {
+	if strings.TrimSpace(messageText) == "" {
 		return
 	}
 
@@ -47,18 +56,33 @@ func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 	args := strings.Fields(messageText)[1:]
 
 	cmd := messaging.FindCommand(cmdName)
+	if cmd == nil {
+		suggestion := messaging.SuggestCommand(cmdName)
+		if suggestion != "" {
+			client.SendMessage(types.SendOptions{
+				JID:  msg.Info.Chat,
+				Text: fmt.Sprintf("❌ Command `%s` not found. Did you mean `%s%s`?", cmdName, prefix, suggestion),
+			})
+		} else {
+			client.SendMessage(types.SendOptions{
+				JID:  msg.Info.Chat,
+				Text: fmt.Sprintf("❌ Command `%s` not found.", cmdName),
+			})
+		}
+		return
+	}
 
 	isSudo, err := sql.IsSudo(msg.Info.Sender.ToNonAD().String())
 	if err != nil {
 		return
 	}
 
-	Mode, err := sql.GetMode()
+	mode, err := sql.GetMode()
 	if err != nil {
 		return
 	}
 
-	if Mode == "Private" && !isSudo {
+	if mode == "Private" && !isSudo {
 		return
 	}
 
@@ -76,27 +100,13 @@ func Plugins(sock *whatsmeow.Client, msg *events.Message) {
 		return
 	}
 
-	if cmd != nil {
+	safeExecute(func() {
 		cmd.Handler(msg, args, sock)
-		return
-	}
-
-	suggestion := messaging.SuggestCommand(cmdName)
-	if suggestion != "" {
-		client.SendMessage(types.SendOptions{
-			JID:  msg.Info.Chat,
-			Text: fmt.Sprintf("❌ Command `%s` not found. Did you mean `%s%s`?", cmdName, prefix, suggestion),
-		})
-	} else {
-		client.SendMessage(types.SendOptions{
-			JID:  msg.Info.Chat,
-			Text: fmt.Sprintf("❌ Command `%s` not found.", cmdName),
-		})
-	}
+	})
 }
 
 func Sticker(sock *whatsmeow.Client, msg *events.Message) {
-	if msg.Message == nil || msg.Message.StickerMessage == nil {
+	if sock == nil || msg == nil || msg.Message == nil || msg.Message.StickerMessage == nil {
 		return
 	}
 
@@ -112,16 +122,11 @@ func Sticker(sock *whatsmeow.Client, msg *events.Message) {
 	defer rows.Close()
 
 	var cmdName string
-	found := false
-	for rows.Next() {
+	if rows.Next() {
 		if err := rows.Scan(&cmdName); err != nil {
-			continue
+			return
 		}
-		found = true
-		break
-	}
-
-	if !found {
+	} else {
 		return
 	}
 
@@ -158,5 +163,7 @@ func Sticker(sock *whatsmeow.Client, msg *events.Message) {
 		return
 	}
 
-	cmd.Handler(msg, []string{}, sock)
+	safeExecute(func() {
+		cmd.Handler(msg, []string{}, sock)
+	})
 }

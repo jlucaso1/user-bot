@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"fmt"
 	"time"
 
 	"bot/client"
@@ -24,18 +23,16 @@ func init() {
 		IsGroup:  false,
 		Handler: func(msg *events.Message, _ []string, sock *whatsmeow.Client) {
 			uptime := helpers.FormatRuntime(time.Since(helpers.StartedAt))
-			response := fmt.Sprintf("```\nRuntime: %s\n```", uptime)
 
 			_, _ = client.SendMessage(btypes.SendOptions{
 				JID:  msg.Info.Chat,
 				Type: btypes.MsgText,
-				Text: response,
+				Text: "```" + uptime + "```",
 			})
 		},
 	})
 
 	messaging.RegisterCommand(&btypes.Command{
-
 		Name:     "restart",
 		Category: "System",
 		FromMe:   true,
@@ -58,13 +55,14 @@ func init() {
 			})
 
 			duration := time.Since(start)
-			response := fmt.Sprintf("```Pong (%v)```", duration.Round(time.Millisecond))
 
 			_, _ = client.SendMessage(btypes.SendOptions{
-				JID:        msg.Info.Chat,
-				Type:       btypes.MsgEdit,
-				MessageID:  res.ID,
-				NewMessage: &waE2E.Message{Conversation: &response},
+				JID:       msg.Info.Chat,
+				Type:      btypes.MsgEdit,
+				MessageID: res.ID,
+				NewMessage: &waE2E.Message{
+					Conversation: proto.String("```pong " + duration.Round(time.Millisecond).String() + "```"),
+				},
 			})
 		},
 	})
