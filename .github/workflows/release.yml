@@ -50,6 +50,7 @@ jobs:
       - name: build binaries
         run: |
           mkdir -p dist
+          LDFLAGS="-s -w"
           GOOS=windows GOARCH=amd64 go build -o dist/xstro-windows-amd64.exe
           GOOS=linux GOARCH=amd64 go build -o dist/xstro-linux-amd64
           GOOS=darwin GOARCH=amd64 go build -o dist/xstro-darwin-amd64
