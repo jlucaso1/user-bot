@@ -17,19 +17,19 @@ import (
 var connectedSent bool
 var mu sync.Mutex
 
-func EventHandler(sock *whatsmeow.Client, evt interface{}) {
+func EventHandler(sock *whatsmeow.Client, evt any) {
 	mu.Lock()
 	if !connectedSent {
 		if sock.Store.ID != nil {
 			jid := sock.Store.ID.ToNonAD()
 			lid := sock.Store.LID.ToNonAD().String()
 
-			parts := strings.SplitN(jid.String(), "@", 2)
+			i := strings.SplitN(jid.String(), "@", 2)
 
 			msg := "bot connected\n" +
 				"go version: " + runtime.Version() + "\n" +
 				"goroutines: " + strconv.Itoa(runtime.NumGoroutine()) + "\n" +
-				"user: @" + parts[0]
+				"user: @" + i[0]
 
 			_, err := sock.SendMessage(sock.BackgroundEventCtx, jid, &waE2E.Message{
 				ExtendedTextMessage: &waE2E.ExtendedTextMessage{
