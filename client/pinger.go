@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 )
 
 var startTime = time.Now()
+var httpServer *http.Server
 
 func getLocalIP() string {
 	ifaces, err := net.Interfaces()
@@ -50,10 +52,10 @@ func getLocalIP() string {
 }
 
 func PortServe() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		var memStats runtime.MemStats
 		runtime.ReadMemStats(&memStats)
-
 		uptime := time.Since(startTime)
 
 		fmt.Fprintf(w, "PID: %d\n", os.Getpid())
@@ -61,28 +63,11 @@ func PortServe() {
 		fmt.Fprintf(w, "Go Version: %s\n", runtime.Version())
 		fmt.Fprintf(w, "Num CPU: %d\n", runtime.NumCPU())
 		fmt.Fprintf(w, "Num Goroutines: %d\n", runtime.NumGoroutine())
-		fmt.Fprintf(w, "Compiler: %s\n", runtime.Compiler)
 		fmt.Fprintf(w, "OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-
 		fmt.Fprintf(w, "Alloc: %d KB\n", memStats.Alloc/1024)
 		fmt.Fprintf(w, "TotalAlloc: %d KB\n", memStats.TotalAlloc/1024)
 		fmt.Fprintf(w, "Sys: %d KB\n", memStats.Sys/1024)
 		fmt.Fprintf(w, "NumGC: %d\n", memStats.NumGC)
-
-		ifaces, err := net.Interfaces()
-		if err != nil {
-			fmt.Fprintf(w, "Error fetching interfaces: %v\n", err)
-		} else {
-			for _, iface := range ifaces {
-				fmt.Fprintf(w, "- Name: %s\n", iface.Name)
-				fmt.Fprintf(w, "  HardwareAddr: %s\n", iface.HardwareAddr.String())
-				fmt.Fprintf(w, "  Flags: %s\n", iface.Flags.String())
-				addrs, _ := iface.Addrs()
-				for _, addr := range addrs {
-					fmt.Fprintf(w, "  Addr: %s\n", addr.String())
-				}
-			}
-		}
 
 		env := os.Environ()
 		for i, e := range env {
@@ -95,17 +80,24 @@ func PortServe() {
 		}
 	})
 
+	httpServer = &http.Server{
+		Addr:    ":8000",
+		Handler: mux,
+	}
+
 	go func() {
-		for {
-			time.Sleep(45 * time.Second)
-			getLocalIP()
+		ip := getLocalIP()
+		fmt.Printf("[Local Host 8000] IP %s\n", ip)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
 		}
 	}()
+}
 
-	ip := getLocalIP()
-	fmt.Printf("[Local Host 8000] IP %s\n", ip)
-
-	if err := http.ListenAndServe(":8000", nil); err != nil {
-		panic(err)
+func StopPortServe() {
+	if httpServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		httpServer.Shutdown(ctx)
 	}
 }

@@ -5,13 +5,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"syscall"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
 )
 
-func Restart() error {
-	return syscall.Exec(os.Args[0], os.Args, os.Environ())
+var cleanupFunc func()
+
+func SetCleanupFunc(fn func()) {
+	cleanupFunc = fn
+}
+
+func Restart() {
+	if cleanupFunc != nil {
+		cleanupFunc()
+	}
+	os.Exit(0)
 }
 
 var fancyMap = map[rune]rune{
