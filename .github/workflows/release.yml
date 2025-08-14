@@ -50,11 +50,12 @@ jobs:
       - name: build binaries
         run: |
           mkdir -p dist
+          BUILD_FLAGS="-trimpath -buildvcs=false"
           LDFLAGS="-s -w"
-          GOOS=windows GOARCH=amd64 go build -o dist/xstro-windows-amd64.exe
-          GOOS=linux GOARCH=amd64 go build -o dist/xstro-linux-amd64
-          GOOS=darwin GOARCH=amd64 go build -o dist/xstro-darwin-amd64
-          GOOS=darwin GOARCH=arm64 go build -o dist/xstro-darwin-arm64
+          GOOS=windows GOARCH=amd64 go build $BUILD_FLAGS -ldflags "$LDFLAGS" -o dist/xstro-windows-amd64.exe
+          GOOS=linux GOARCH=amd64 go build $BUILD_FLAGS -ldflags "$LDFLAGS" -o dist/xstro-linux-amd64
+          GOOS=darwin GOARCH=amd64 go build $BUILD_FLAGS -ldflags "$LDFLAGS" -o dist/xstro-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build $BUILD_FLAGS -ldflags "$LDFLAGS" -o dist/xstro-darwin-arm64
 
       - name: create archives
         run: |
