@@ -25,11 +25,9 @@ jobs:
         run: |
           msg=$(git log -1 --pretty=%s)
           if [[ "$msg" == chore:* ]]; then
-            # Release version - try to get exact tag, fallback to commit
             version=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "v0.1.0-${GITHUB_SHA::7}")
             echo "prerelease=false" >> $GITHUB_OUTPUT
           else
-            # Nightly version
             version="nightly-${GITHUB_SHA::7}"
             echo "prerelease=true" >> $GITHUB_OUTPUT
           fi
@@ -38,20 +36,13 @@ jobs:
       - name: collect release notes
         id: notes
         run: |
-          # Find the last commit with "chore:" in the message
           last_chore=$(git log --oneline --grep="^chore:" -1 --format="%H" || echo "")
-
           if [[ -n "$last_chore" ]]; then
-            # Get commits since the last chore commit (excluding the chore commit itself)
             range="${last_chore}..HEAD"
           else
-            # No previous chore commit found, get all commits
             range="HEAD"
           fi
-
-          # Generate release notes
-          notes=$(git log $range --pretty=format:"- **%h** %s%n%b" --no-merges | grep -v "^$" || echo "- Initial release")
-
+          notes=$(git log $range --pretty=format:"- **%h** %s%n%b" --no-merges | grep -v "^$" || echo "- initial release")
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -59,8 +50,6 @@ jobs:
       - name: build binaries
         run: |
           mkdir -p dist
-
-          # Build for different platforms
           GOOS=windows GOARCH=amd64 go build -o dist/xstro-windows-amd64.exe
           GOOS=linux GOARCH=amd64 go build -o dist/xstro-linux-amd64
           GOOS=darwin GOARCH=amd64 go build -o dist/xstro-darwin-amd64
@@ -69,36 +58,44 @@ jobs:
       - name: create archives
         run: |
           version=${{ steps.version.outputs.version }}
-
-          # Create tar.gz for Unix systems
           tar -czf xstro-${version}.tar.gz -C dist .
-
-          # Create zip for Windows
           cd dist && zip -r ../xstro-${version}.zip . && cd ..
 
-      - name: create release
+      - name: check existing prerelease
+        id: check_release
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          if gh release view "$version" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: create or update release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
           prerelease: ${{ steps.version.outputs.prerelease }}
           body: |
-            **Changes since last release:**
+            **changes since last release:**
             ${{ steps.notes.outputs.notes }}
 
             ---
-            **Download the right binary for your system:**
-            - **Windows**: `xstro-windows-amd64.exe`
-            - **Linux**: `xstro-linux-amd64`
-            - **macOS Intel**: `xstro-darwin-amd64`
-            - **macOS Apple Silicon**: `xstro-darwin-arm64`
+            **download the right binary for your system:**
+            - windows: `xstro-windows-amd64.exe`
+            - linux: `xstro-linux-amd64`
+            - macos intel: `xstro-darwin-amd64`
+            - macos apple silicon: `xstro-darwin-arm64`
 
-            Or download the archives:
-            - `xstro-${{ steps.version.outputs.version }}.tar.gz` (Unix/Linux)
-            - `xstro-${{ steps.version.outputs.version }}.zip` (Windows)
+            archives:
+            - `xstro-${{ steps.version.outputs.version }}.tar.gz` (unix/linux)
+            - `xstro-${{ steps.version.outputs.version }}.zip` (windows)
           artifacts: |
             dist/*
             xstro-${{ steps.version.outputs.version }}.tar.gz
             xstro-${{ steps.version.outputs.version }}.zip
-          allowUpdates: true
+          allowUpdates: ${{ steps.check_release.outputs.exists == 'true' || steps.version.outputs.prerelease == 'false' }}
           makeLatest: ${{ steps.version.outputs.prerelease == 'false' }}
