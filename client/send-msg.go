@@ -5,6 +5,7 @@ import (
 	"bot/utils"
 	"context"
 	"fmt"
+	"log"
 	"mime"
 	"os"
 	"path/filepath"
@@ -146,6 +147,7 @@ func SendMessage(opts types.SendOptions) (string, error) {
 			Categories: opts.Categories,
 		})
 		if err != nil {
+			log.Printf("ERROR: failed to convert to webp: %v", err)
 			return "", fmt.Errorf("failed to convert to webp: %v", err)
 		}
 
