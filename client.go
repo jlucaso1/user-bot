@@ -22,6 +22,7 @@ import (
 var sock *whatsmeow.Client
 
 func main() {
+	log.Println("Starting Client...")
 	ctx := context.Background()
 
 	store := sqlstore.NewWithDB(sql.Conn, "sqlite", waLog.Stdout("DB", "ERROR", true))
@@ -34,7 +35,7 @@ func main() {
 
 	device, _ := store.GetFirstDevice(ctx)
 	sock = whatsmeow.NewClient(device, waLog.Stdout("Client", "INFO", true))
-	sock.AddEventHandler(func(evt interface{}) {
+	sock.AddEventHandler(func(evt any) {
 		ev.EventHandler(sock, evt)
 	})
 
